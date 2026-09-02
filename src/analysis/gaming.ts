@@ -1,5 +1,6 @@
 import type { Commit } from '../domain/types.js';
 import type { DeveloperLineage } from './lineage.js';
+import { orderCommitsForReplay } from './order.js';
 
 /**
  * Signals that a developer's raw activity is inflated rather than valuable.
@@ -68,7 +69,7 @@ export function detectGaming(
     return created;
   };
 
-  const ordered = [...commits].sort((a, b) => a.authoredAt.getTime() - b.authoredAt.getTime());
+  const ordered = orderCommitsForReplay(commits);
   for (const commit of ordered) {
     if (commit.parents.length > 1) continue;
     const a = get(commit.author.key);

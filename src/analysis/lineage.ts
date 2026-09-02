@@ -1,4 +1,5 @@
 import type { ActivitySnapshot } from '../domain/types.js';
+import { orderCommitsForReplay } from './order.js';
 
 const DAY_MS = 86_400_000;
 
@@ -91,9 +92,7 @@ export class LineageAnalyzer {
   analyze(snapshot: ActivitySnapshot): LineageResult {
     const asOf = (this.#asOf ?? snapshot.capturedAt).getTime();
     // Oldest first: lineage only makes sense replayed forward.
-    const commits = [...snapshot.commits].sort(
-      (a, b) => a.authoredAt.getTime() - b.authoredAt.getTime(),
-    );
+    const commits = orderCommitsForReplay(snapshot.commits);
 
     const stocks = new Map<string, Map<string, Stock>>(); // path -> dev -> stock
     const devs = new Map<string, Mutable>();

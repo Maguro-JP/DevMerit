@@ -6,6 +6,7 @@ import type { DeveloperLineage, LineageOptions } from './lineage.js';
 import { LineageAnalyzer, reconcileWithBlame } from './lineage.js';
 import type { GamingOptions, GamingSignals } from './gaming.js';
 import { detectGaming } from './gaming.js';
+import { orderCommitsForReplay } from './order.js';
 
 /**
  * Everything measurable about one developer in one repository.
@@ -125,7 +126,7 @@ export function computeMetrics(
   // First author of each file, used to tell "wrote it" from "worked on someone
   // else's code" without a second blame pass.
   const fileOriginator = new Map<string, string>();
-  const ordered = [...commits].sort((a, b) => a.authoredAt.getTime() - b.authoredAt.getTime());
+  const ordered = orderCommitsForReplay(commits);
 
   for (const commit of ordered) {
     const a = ensure(commit.author);

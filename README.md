@@ -44,6 +44,22 @@ accurate survival figures), `--top <n>`.
 
 Analysis runs against a **local clone**, so a full report costs no API quota.
 
+### GitHub
+
+Pull requests, reviews and issues only exist in the API. The intended arrangement is to clone
+once for the expensive code analysis and spend requests only on what git cannot see:
+
+```ts
+const git = await new LocalGitProvider({ cwd }).fetch(repo);
+const github = await new GitHubProvider({ token }).fetch(repo);
+const report = new ContributionCalculator().calculate(mergeSnapshots(git, github));
+```
+
+`GitHubClient` paginates via `Link`, honours `Retry-After` and secondary rate limits, and pauses
+*before* the primary budget is exhausted rather than after. Per-commit diffs are off by default
+because they cost one request each. `mergeSnapshots` also unifies each developer's git email
+identity with their GitHub login, so code work and review work land on one person.
+
 ### Example output
 
 ```
@@ -69,7 +85,7 @@ Activity (provider)  →  Analysis  →  Metrics  →  Scoring algorithm  →  C
 | Layer | Location | Responsibility |
 | --- | --- | --- |
 | Domain | `src/domain/` | Forge-agnostic model (`Commit`, `PullRequest`, `Review`, `BlameSegment`) and identity resolution |
-| Providers | `src/providers/` | `ActivityProvider` implementations. `LocalGitProvider` reads a clone via the `git` CLI |
+| Providers | `src/providers/` | `ActivityProvider` implementations: `LocalGitProvider` (clone, via the `git` CLI) and `GitHubProvider` (pull requests, reviews, issues) |
 | Analysis | `src/analysis/` | Intent classification, lineage replay, anti-gaming signals, metric aggregation |
 | Scoring | `src/scoring/` | `ScoringAlgorithm` strategy + `BalancedV1` baseline model |
 | Pipeline | `src/pipeline/` | `ContributionCalculator` ties the stages together |
@@ -103,8 +119,8 @@ npm run check   # typecheck + lint + tests
 
 ## Status
 
-Foundation: domain model, local-git provider, lineage analysis, anti-gaming signals, the
-`BalancedV1` baseline algorithm, and an explainable CLI report.
+Working: domain model, local-git and GitHub providers, lineage analysis, anti-gaming signals,
+the `BalancedV1` baseline algorithm, and an explainable CLI report.
 
-Next: a GitHub provider (pull requests, reviews, issues) with rate-limit-aware pagination, then
-a second scoring algorithm to compare against the baseline.
+Next: a second scoring algorithm to compare against the baseline, inline review-comment counts
+for a sharper review-depth signal, and a web view of the per-developer breakdown.
